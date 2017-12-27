@@ -52,6 +52,7 @@ D_HORIZONTAL = 0.10746268656716418       #each rectangle horizontal side
 
 CHESS_RADIUS = 1/23
 
+from scipy.spatial import distance
 
 '''
 Board Game
@@ -60,6 +61,7 @@ class ChessGame:
     
     def __init__(self,gameBoard):
         self._gameState = gameBoard
+        self._initialTurn = 0
             
     def __iter__(self):
         class Generator:
@@ -76,6 +78,12 @@ class ChessGame:
     
     def returnBoard(self):
         return self._gameState
+    
+    def returnTurn(self):
+        return self._initialTurn
+    
+    def incTurn(self):
+        self._initialTurn += 1
   
 '''
 Chess Type
@@ -85,7 +93,10 @@ class Chess:
     def __init__(self,typeNum,color):
         self._color = color
         self._identity = typeNum
+        self._isGrabbed = False
+        self._bgColor = 'white'
 
+        
     def returnWholeType(self):
         return self.__repr__()
     
@@ -94,6 +105,19 @@ class Chess:
         
     def returnColorType(self):
         return self._color
+    
+    def returnGrabbed(self):
+        return self._isGrabbed
+    
+    def returnBgColor(self):
+        return self._bgColor
+    
+    def grabbedChess(self):
+        isGrabbed = lambda: True if not self._isGrabbed else False
+        self._isGrabbed = isGrabbed()
+        bgColor = lambda: 'Grey' if self._isGrabbed else 'White'
+        self._bgColor = bgColor()
+        
 
 class Guard(Chess):
     
@@ -101,9 +125,7 @@ class Guard(Chess):
         Chess.__init__(self,type_num,color)
 
     def __str__(self):
-        if self._color == 'b':
-            return '士'
-        return '仕'
+        return returnChessSring('士','仕',self._color)
     
     def __repr__(self):
         return f'({self._identity},{self._color})'
@@ -115,9 +137,7 @@ class Soldier(Chess):
         Chess.__init__(self,type_num,color)
 
     def __str__(self):
-        if self._color == 'b':
-            return '卒'
-        return '兵'
+        return returnChessSring('卒','兵',self._color)
     
     def __repr__(self):
         return f'({self._identity},{self._color})'
@@ -129,9 +149,7 @@ class Cannon(Chess):
         Chess.__init__(self,type_num,color)
 
     def __str__(self):
-        if self._color == 'b':
-            return '砲'
-        return '炮'
+        return returnChessSring('砲','炮',self._color)
     
     def __repr__(self):
         return f'({self._identity},{self._color})'
@@ -143,9 +161,7 @@ class Tank(Chess):
         Chess.__init__(self,type_num,color)
     
     def __str__(self):
-        if self._color == 'b':
-            return '車'
-        return '俥'
+        return returnChessSring('車','俥',self._color)
     
     def __repr__(self):
         return f'({self._identity},{self._color})'
@@ -156,9 +172,7 @@ class Elephant(Chess):
         Chess.__init__(self,type_num,color)
 
     def __str__(self):
-        if self._color == 'b':
-            return '象'
-        return '相'
+        return returnChessSring('象','相',self._color)
     
     def __repr__(self):
         return f'({self._identity},{self._color})'
@@ -169,10 +183,8 @@ class Horse(Chess):
         Chess.__init__(self,type_num,color)
 
     def __str__(self):
-        if self._color == 'b':
-            return '馬'
-        return '傌'
-    
+        return returnChessSring('馬','傌',self._color)
+
     def __repr__(self):
         return f'({self._identity},{self._color})'
     
@@ -182,9 +194,7 @@ class King(Chess):
         Chess.__init__(self,type_num,color)
         
     def __str__(self):
-        if self._color == 'b':
-            return '將'
-        return '帥'
+        return returnChessSring('將','帥',self._color)
     
     def __repr__(self):
         return f'({self._identity},{self._color})'
@@ -193,9 +203,6 @@ class King(Chess):
 '''
 BasePoints
 '''
-
-
-
 class BasePoint:
     def __init__(self, fx: float, fy: float,chess):
         '''
@@ -203,6 +210,7 @@ class BasePoint:
         '''
         self.fx = fx
         self.fy = fy
+        self.pixel_point = (self.fx,self.fy)
         self.content = [chess]
 
     def fraction(self) -> (float, float):
@@ -227,6 +235,18 @@ class BasePoint:
         if self.content[0] == 0:
             return 0
         return str(self.content[0])
+    
+    def contain(self,clicked_point):
+        if euc(self.pixel_point,clicked_point) < CHESS_RADIUS:
+            return True
+        return False
+
+def euc(point1,point2):
+    return distance.euclidean(point1,point2)
+
+def returnChessSring(*args):
+    typeName = lambda color: args[0] if color == 'Black' else args[1]
+    return typeName(args[2])
 
 
 def from_frac(frac_x: float, frac_y: float) -> BasePoint:
@@ -242,4 +262,23 @@ def from_pixel(pixel_x: int, pixel_y: int, pixel_width: int, pixel_height: int) 
     '''
     return BasePoint(pixel_x / pixel_width, pixel_y / pixel_height)
         
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

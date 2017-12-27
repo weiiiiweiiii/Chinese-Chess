@@ -15,12 +15,15 @@ import Control
 
 
 
-class GameBoard():
+class GameBoard:
 
     def __init__(self):
         
         #Game on board
         self.Game = Model.ChessGame(Control.initialBoard())
+        
+        #set up grab issue
+        self.isGrabbedOne = False
         
         #load picture
         self.bgImage = Image.open('newBoard.png')
@@ -31,7 +34,7 @@ class GameBoard():
         #New Game
         self.newGameButton = tk.Button(master = self.window,
                 text = '开启新的棋局（Start a New Game）',
-                font = ('Helvetica',20))
+                font = ('Helvetica',20),command = self.startNewGame)
         self.newGameButton.grid(row = 0, column = 0,sticky = tk.N + tk.S + tk.E + tk.W)
         
         #Quit Button
@@ -71,13 +74,38 @@ class GameBoard():
         self.window.bind("<Configure>", self.resizeHandler)
         #widght to click on canvas
         self.canvas.bind('<Button-1>',self.clickedHandler)
-
         
+
     
     def resizeHandler(self,event):
         '''
             resize everything on canvas
         '''
+        self.redrawAll()
+        
+        
+    def clickedHandler(self,event):
+        '''
+            click on canvas
+        '''
+        width = self.canvas.winfo_width()
+        height = self.canvas.winfo_height()
+        
+        turn = self.Game.returnTurn()
+        player = lambda turn: 'Black' if turn%2 != 0 else 'Red'
+        
+        
+        if not self.isGrabbedOne:
+            if Control.grabChess(event,self.Game,player(turn),width,height,None):
+                self.isGrabbedOne = True
+        else:
+            if Control.giveUpGrab(event,self.Game,player(turn),width,height,None):
+                self.isGrabbedOne = False
+            
+        self.redrawAll()
+    
+    
+    def redrawAll(self):
         canvasWidth = self.canvas.winfo_width()
         canvasHeight = self.canvas.winfo_height()
         
@@ -86,13 +114,6 @@ class GameBoard():
         self._drawBoard(canvasWidth,canvasHeight)
         self._drawChess(canvasWidth,canvasHeight)
         
-        
-    def clickedHandler(self,event):
-        '''
-            click on canvas
-        '''
-        clickedX,clickedY = Control.getPoint(event)
-        print(clickedX,clickedY,self.canvas.winfo_width(),self.canvas.winfo_height())
         
     def _drawBoard(self,canvasWidth,canvasHeight):
         '''
@@ -110,23 +131,26 @@ class GameBoard():
         '''
         radius = Model.CHESS_RADIUS
         for rows in self.Game:
-            for point in rows:
-                if point.content[0] != None :
-                    x = point.fx
-                    y = point.fy
-                    color = lambda typeName: 'black' if typeName == 'b' else 'red'
+            for base_point in rows:
+                if base_point.content[0] != None :
+                    x = base_point.fx
+                    y = base_point.fy
                     self.canvas.create_oval(canvasWidth*(x-radius), 
                                             canvasHeight*(y-radius),
                                             canvasWidth*(x+radius),
                                             canvasHeight*(y+radius),
-                                            fill = 'white',
+                                            fill = f'{base_point.content[0].returnBgColor()}',
                                             outline = 'black')
                     self.canvas.create_text(canvasWidth*x,
                                             canvasHeight*y,
-                                            text=f'{str(point.content[0])}',
-                                            fill = f'{color(point.content[0].returnColorType())}',
+                                            text=f'{str(base_point.content[0])}',
+                                            fill = f'{base_point.content[0].returnColorType()}',
                                             font = ('New Times Roman',25))
-
+    
+    def startNewGame(self):
+        self.Game = Model.ChessGame(Control.initialBoard())
+        self.isGrabbedOne = False
+        self.redrawAll()
 
     def quitGame(self):
         self.window.quit()
